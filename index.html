@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>مصحف القارئ محمد أيوب</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --verse-font-size: 1.35rem;
+      }
+      body {
+        font-family: "Cairo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: radial-gradient(circle at top, #eef2ff, #ffffff 60%);
+        color: #0f172a;
+        transition: background 0.35s ease, color 0.35s ease;
+      }
+      body.dark-mode {
+        color-scheme: dark;
+        background: radial-gradient(circle at top, #0f172a, #020617 60%);
+        color: #f8fafc;
+      }
+      body.dark-mode .card,
+      body.dark-mode .hero {
+        background: rgba(15, 23, 42, 0.9);
+        color: #e2e8f0;
+      }
+      body.dark-mode .card,
+      body.dark-mode .chapter-card,
+      body.dark-mode .verse-card {
+        border-color: rgba(148, 163, 184, 0.3) !important;
+        background: rgba(2, 6, 23, 0.8);
+      }
+      body.dark-mode .translation,
+      body.dark-mode .text-muted {
+        color: #cbd5f5 !important;
+      }
+      body.dark-mode #bookmarksContainer .text-dark {
+        color: #e2e8f0 !important;
+      }
+      .hero {
+        background: linear-gradient(135deg, #023047, #001219);
+        color: #fff;
+        border-radius: 1.25rem;
+        padding: 3rem;
+        position: relative;
+        overflow: hidden;
+      }
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 1rem;
+      }
+      .verse-card {
+        border-radius: 1rem;
+        border: 1px solid rgba(2, 48, 71, 0.08);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+      }
+      .verse-text {
+        font-family: "Amiri", "Scheherazade New", serif;
+        font-size: var(--verse-font-size, 1.35rem);
+        line-height: 2.2rem;
+      }
+      .chapters-list {
+        max-height: 420px;
+        overflow-y: auto;
+      }
+      .chapter-card {
+        border-radius: 0.85rem;
+        border: 1px solid transparent;
+        transition: 0.2s ease;
+      }
+      .chapter-card.active,
+      .chapter-card:hover {
+        border-color: #012a4a;
+        box-shadow: 0 12px 25px rgba(1, 42, 74, 0.15);
+      }
+      .translation {
+        font-size: 0.95rem;
+        color: #475569;
+      }
+      .verse-card.highlight {
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+      }
+      .floating-player {
+        position: sticky;
+        bottom: 1.5rem;
+        z-index: 5;
+      }
+      .floating-player audio {
+        width: 100%;
+      }
+      .verse-actions button {
+        border-radius: 999px;
+      }
+      .letter-spacing {
+        letter-spacing: 0.2rem;
+      }
+      .filter-pill {
+        border-radius: 999px;
+        border: 1px solid rgba(2, 48, 71, 0.2);
+        background: #fff;
+        color: #012a4a;
+      }
+      .filter-pill.active,
+      .filter-pill:hover {
+        background: #012a4a;
+        color: #fff;
+      }
+      body.dark-mode .filter-pill {
+        background: transparent;
+        color: #e2e8f0;
+        border-color: rgba(226, 232, 240, 0.3);
+      }
+      body.dark-mode .filter-pill.active,
+      body.dark-mode .filter-pill:hover {
+        background: #38bdf8;
+        border-color: #38bdf8;
+        color: #0f172a;
+      }
+      .theme-toggle {
+        border-radius: 999px;
+      }
+      .font-size-control input[type="range"] {
+        accent-color: #0ea5e9;
+      }
+      .progress-wrapper {
+        background: rgba(2, 48, 71, 0.1);
+        border-radius: 999px;
+        height: 10px;
+        overflow: hidden;
+      }
+      .progress-bar-custom {
+        background: linear-gradient(90deg, #0ea5e9, #22d3ee);
+        height: 100%;
+        transition: width 0.3s ease;
+      }
+      body.dark-mode .progress-wrapper {
+        background: rgba(226, 232, 240, 0.2);
+      }
+      body.dark-mode .progress-bar-custom {
+        background: linear-gradient(90deg, #fbbf24, #f97316);
+      }
+      .random-verse-card {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(8px);
+      }
+      .search-result {
+        border-radius: 0.75rem;
+        border: 1px dashed rgba(2, 48, 71, 0.2);
+        padding: 0.75rem;
+      }
+      body.dark-mode .search-result {
+        border-color: rgba(226, 232, 240, 0.2);
+      }
+      .search-result em {
+        background: #fbbf24;
+        padding: 0 0.2rem;
+        border-radius: 0.3rem;
+        font-style: normal;
+      }
+      .player-meta {
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container py-5">
+      <section class="hero mb-5">
+        <div class="d-flex justify-content-end">
+          <button id="themeToggle" class="btn btn-outline-light theme-toggle">
+            <i class="bi bi-moon-stars me-2"></i>
+            تفعيل الوضع الليلي
+          </button>
+        </div>
+        <div class="row align-items-center g-4">
+          <div class="col-lg-8">
+            <p class="text-uppercase letter-spacing mb-2 small text-info">
+              Quran API + محمد أيوب
+            </p>
+            <h1 class="fw-bold display-5">منصة تلاوة شاملة بواجهة واحدة</h1>
+            <p class="lead mt-3">
+              تصفح سور القرآن الكريم، استمع لتلاوة الشيخ <strong>محمد أيوب</strong>,
+              واحتفظ بآياتك المفضلة. يتم جلب جميع البيانات مباشرة من واجهات برمجة
+              التطبيقات (APIs) الرسمية.
+            </p>
+            <div class="d-flex flex-wrap gap-3 mt-4">
+              <span class="badge bg-light text-dark px-3 py-2">Quran.com API</span>
+              <span class="badge bg-light text-dark px-3 py-2">Islamic.network CDN</span>
+              <span class="badge bg-light text-dark px-3 py-2">Local bookmarks</span>
+            </div>
+          </div>
+          <div class="col-lg-4 text-lg-end text-center">
+            <div class="card bg-light text-dark border-0">
+              <div class="card-body">
+                <p class="text-muted mb-1">القارئ</p>
+                <h3 class="fw-bold">محمد أيوب</h3>
+                <p class="small mb-2">رواية حفص عن عاصم</p>
+                <p class="mb-0 small">
+                  يتم تحميل جميع المقاطع بصيغة MP3 بجودة 128K من خلال واجهة Islamic
+                  Network الرسمية.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="random-verse-card text-white mt-4 p-4">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+              <p class="text-uppercase letter-spacing small mb-1">آية اليوم</p>
+              <strong id="randomVerseMeta">جارٍ تحميل الآية...</strong>
+            </div>
+            <button id="refreshRandomVerse" class="btn btn-outline-light btn-sm">
+              <i class="bi bi-arrow-repeat me-1"></i>
+              تحديث
+            </button>
+          </div>
+          <p id="randomVerseText" class="mt-3 mb-2 verse-text"></p>
+          <p id="randomVerseTranslation" class="small mb-0"></p>
+          <button id="openRandomVerse" class="btn btn-light btn-sm text-dark mt-3" disabled>
+            فتح هذه الآية في القارئ
+          </button>
+        </div>
+      </section>
+
+      <section class="row g-4">
+        <div class="col-lg-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge bg-dark">السور</span>
+                <p class="text-muted small mb-0">114 سورة من واجهة Quran.com</p>
+              </div>
+              <div class="input-group mb-3">
+                <span class="input-group-text bg-transparent border-end-0">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input
+                  id="searchInput"
+                  type="text"
+                  class="form-control border-start-0"
+                  placeholder="ابحث باسم السورة أو رقمها"
+                />
+              </div>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <button class="btn btn-sm filter-pill active" data-revelation="all">
+                  جميع السور
+                </button>
+                <button class="btn btn-sm filter-pill" data-revelation="makkah">
+                  مكية فقط
+                </button>
+                <button class="btn btn-sm filter-pill" data-revelation="madinah">
+                  مدنية فقط
+                </button>
+              </div>
+              <label class="form-label small text-muted" for="translationSelect"
+                >ترجمة المعاني</label
+              >
+              <select id="translationSelect" class="form-select mb-4">
+                <option value="131">Sahih International (English)</option>
+                <option value="134">French - D. Kazimirski</option>
+                <option value="38">Indonesian - Bahasa Indonesia</option>
+              </select>
+              <div class="chapters-list" id="chaptersList"></div>
+            </div>
+          </div>
+          <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                  <h6 class="mb-0">بحث في القرآن كاملًا</h6>
+                  <p class="text-muted small mb-0">يستخدم واجهة البحث الرسمية</p>
+                </div>
+                <span class="badge bg-info text-dark">API</span>
+              </div>
+              <div class="input-group">
+                <input
+                  id="globalSearchInput"
+                  type="search"
+                  class="form-control"
+                  placeholder="اكتب كلمة أو عبارة"
+                  aria-label="بحث في القرآن"
+                />
+                <button id="globalSearchBtn" class="btn btn-dark">بحث</button>
+              </div>
+              <div id="globalSearchResults" class="mt-3 small text-muted">
+                اكتب ما تبحث عنه ثم اضغط زر البحث.
+              </div>
+            </div>
+          </div>
+          <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="mb-0">الآيات المحفوظة</h6>
+                <button class="btn btn-link text-decoration-none p-0" id="clearBookmarks">
+                  مسح الكل
+                </button>
+              </div>
+              <div id="bookmarksContainer" class="small text-muted"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-8">
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body d-flex flex-column gap-3">
+              <div>
+                <h3 class="mb-1" id="chapterTitle">اختر سورة</h3>
+                <p class="text-muted mb-0" id="chapterMeta"></p>
+              </div>
+              <div class="d-flex flex-wrap gap-3 align-items-center">
+                <button id="playRecitation" class="btn btn-dark px-4" disabled>
+                  تشغيل تلاوة السورة كاملة
+                </button>
+                <span class="badge bg-secondary">جودة 128K</span>
+                <span class="badge bg-secondary">تحميل مباشر من API</span>
+              </div>
+              <div class="font-size-control d-flex align-items-center gap-3 flex-wrap">
+                <label class="small text-muted mb-0" for="fontSizeRange">حجم خط الآيات</label>
+                <input type="range" id="fontSizeRange" min="20" max="36" value="24" />
+                <span class="badge bg-info text-dark" id="fontSizeValue">24px</span>
+              </div>
+              <div class="border rounded-4 p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="small text-muted">مؤشر التقدم في القراءة</span>
+                  <strong id="readingProgressText">0%</strong>
+                </div>
+                <div class="progress-wrapper">
+                  <div id="readingProgressBar" class="progress-bar-custom" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="versesContainer" class="d-flex flex-column gap-3"></div>
+        </div>
+      </section>
+
+      <div class="floating-player mt-4">
+        <div class="card border-0 shadow-lg">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong>مشغل التلاوة</strong>
+              <span class="text-muted small">القارئ: محمد أيوب</span>
+            </div>
+            <div id="playerMeta" class="player-meta text-muted mb-2">لم يتم اختيار أي مقطع بعد.</div>
+            <audio id="audioPlayer" controls preload="none"></audio>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <span class="small text-muted">يستند إلى CDN Islamic Network</span>
+              <a id="downloadRecitation" class="small" href="#" target="_blank" rel="noopener" download>تحميل الملف الحالي</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const API_BASE = "https://api.quran.com/api/v4";
+      const TRANSLATION_ID = 131; // default Saheeh International
+      const RECITER_SLUG = "ar.muhammadayyoub";
+      const LAST_CHAPTER_KEY = "lastChapterId";
+      const TRANSLATION_KEY = "preferredTranslation";
+      const THEME_KEY = "quran_theme";
+      const FONT_SIZE_KEY = "verseFontSize";
+      const audioPlayer = document.getElementById("audioPlayer");
+      const playerMeta = document.getElementById("playerMeta");
+      const downloadRecitation = document.getElementById("downloadRecitation");
+      const playBtn = document.getElementById("playRecitation");
+      const chaptersList = document.getElementById("chaptersList");
+      const searchInput = document.getElementById("searchInput");
+      const chapterTitle = document.getElementById("chapterTitle");
+      const chapterMeta = document.getElementById("chapterMeta");
+      const versesContainer = document.getElementById("versesContainer");
+      const bookmarksContainer = document.getElementById("bookmarksContainer");
+      const clearBookmarksBtn = document.getElementById("clearBookmarks");
+      const translationSelect = document.getElementById("translationSelect");
+      const filterButtons = document.querySelectorAll("[data-revelation]");
+      const progressBar = document.getElementById("readingProgressBar");
+      const progressText = document.getElementById("readingProgressText");
+      const themeToggle = document.getElementById("themeToggle");
+      const fontSizeRange = document.getElementById("fontSizeRange");
+      const fontSizeValue = document.getElementById("fontSizeValue");
+      const randomVerseText = document.getElementById("randomVerseText");
+      const randomVerseMeta = document.getElementById("randomVerseMeta");
+      const randomVerseTranslation = document.getElementById("randomVerseTranslation");
+      const refreshRandomVerseBtn = document.getElementById("refreshRandomVerse");
+      const openRandomVerseBtn = document.getElementById("openRandomVerse");
+      const globalSearchInput = document.getElementById("globalSearchInput");
+      const globalSearchBtn = document.getElementById("globalSearchBtn");
+      const globalSearchResults = document.getElementById("globalSearchResults");
+
+      let chapters = [];
+      let currentChapterId = null;
+      let currentChapterName = "";
+      let pendingChapterSelection = null;
+      const bookmarks = JSON.parse(localStorage.getItem("bookmarkedVerses") || "[]");
+      let currentTranslationId = Number(localStorage.getItem(TRANSLATION_KEY)) || TRANSLATION_ID;
+      let revelationFilter = "all";
+      let searchTerm = "";
+      let observer = null;
+      let currentChapterVersesCount = 0;
+      const viewedVerses = new Set();
+      let versesAbortController = null;
+      let lastRandomVerse = null;
+      let currentTrackMeta = {
+        title: "",
+        album: "",
+        description: "",
+        fileName: ""
+      };
+
+      const updatePlayerMeta = (text) => {
+        playerMeta.textContent = text || "لم يتم اختيار أي مقطع بعد.";
+      };
+
+      const updateMediaSession = () => {
+        if (!("mediaSession" in navigator) || !currentTrackMeta.title) return;
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: currentTrackMeta.title,
+          artist: "الشيخ محمد أيوب",
+          album: currentTrackMeta.album,
+        });
+      };
+
+      const setDownloadLink = (url, fileName) => {
+        downloadRecitation.href = url;
+        if (!url || url === "#") {
+          downloadRecitation.removeAttribute("download");
+          downloadRecitation.classList.add("text-muted", "disabled");
+        } else {
+          downloadRecitation.setAttribute("download", `${fileName}.mp3`);
+          downloadRecitation.classList.remove("text-muted", "disabled");
+        }
+      };
+
+      const playAudioFromUrl = (url, meta) => {
+        currentTrackMeta = meta;
+        audioPlayer.src = url;
+        audioPlayer.play().catch(() => {});
+        updatePlayerMeta(meta.description);
+        setDownloadLink(url, meta.fileName);
+        updateMediaSession();
+      };
+
+      const applyFontSize = (value) => {
+        document.documentElement.style.setProperty("--verse-font-size", `${value}px`);
+        fontSizeValue.textContent = `${value}px`;
+        localStorage.setItem(FONT_SIZE_KEY, value);
+      };
+
+      const focusVerse = (verseNumber) => {
+        if (!verseNumber) return;
+        const card = document.querySelector(`[data-verse-number="${verseNumber}"]`);
+        if (card) {
+          card.classList.add("highlight");
+          card.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => card.classList.remove("highlight"), 4000);
+        }
+      };
+
+      const formatChapterMeta = (chapter) => {
+        if (!chapter) return "";
+        return `عدد الآيات: ${chapter.verses_count} • ترتيب النزول: ${chapter.revelation_order} • ${
+          chapter.revelation_place === "makkah" ? "مكية" : "مدنية"
+        }`;
+      };
+
+      const updateProgress = () => {
+        const total = currentChapterVersesCount || 0;
+        const progressValue = total ? Math.min(100, Math.round((viewedVerses.size / total) * 100)) : 0;
+        progressBar.style.width = `${progressValue}%`;
+        progressText.textContent = `${progressValue}%`;
+      };
+
+      const setupObservers = () => {
+        if (observer) observer.disconnect();
+        if (!currentChapterVersesCount) return;
+        observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                const verseNumber = Number(entry.target.dataset.verseNumber);
+                viewedVerses.add(verseNumber);
+                updateProgress();
+              }
+            });
+          },
+          { threshold: 0.6 }
+        );
+        document.querySelectorAll("[data-verse-number]").forEach((card) => observer.observe(card));
+      };
+
+      const renderBookmarks = () => {
+        if (!bookmarks.length) {
+          bookmarksContainer.innerHTML = "لا توجد آيات محفوظة بعد.";
+          return;
+        }
+        bookmarksContainer.innerHTML = bookmarks
+          .map((item) => {
+            const chapterName = item.chapterName || "سورة";
+            const verseNumber = item.verseNumber || item.verse || "؟";
+            const text = item.text || "";
+            const chapterId = item.chapterId;
+            const jumpButton = chapterId
+              ? `<button class="btn btn-sm btn-outline-primary mt-2" data-jump-chapter="${chapterId}" data-jump-verse="${verseNumber}">فتح الآية</button>`
+              : "";
+            return `
+              <div class="border-bottom py-2">
+                <div class="fw-semibold mb-1">${chapterName} : الآية ${verseNumber}</div>
+                <div class="text-dark">${text}</div>
+                ${jumpButton}
+              </div>
+            `;
+          })
+          .join("");
+      };
+
+      const bookmarkVerse = ({ chapterName, verseNumber, text, chapterId }) => {
+        const exists = bookmarks.some(
+          (item) => item.chapterId === chapterId && item.verseNumber === verseNumber
+        );
+        if (exists) return;
+        bookmarks.push({ chapterName, verseNumber, text, chapterId });
+        localStorage.setItem("bookmarkedVerses", JSON.stringify(bookmarks));
+        renderBookmarks();
+      };
+
+      const renderChapters = (data) => {
+        chaptersList.innerHTML = data
+          .map(
+            (chapter) => `
+              <button class="chapter-card btn btn-light w-100 text-start mb-2 ${
+                chapter.id === currentChapterId ? "active" : ""
+              }" data-id="${chapter.id}" data-place="${chapter.revelation_place}">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div>
+                    <div class="fw-bold">${chapter.name_arabic}</div>
+                    <small class="text-muted">${chapter.name_simple}</small>
+                  </div>
+                  <span class="badge bg-dark">${chapter.id}</span>
+                </div>
+              </button>
+            `
+          )
+          .join("");
+      };
+
+      const applyChapterFilters = () => {
+        return chapters.filter((chapter) => {
+          const matchesFilter =
+            revelationFilter === "all" || chapter.revelation_place === revelationFilter;
+          const matchesSearch =
+            !searchTerm ||
+            chapter.name_simple.toLowerCase().includes(searchTerm) ||
+            chapter.name_arabic.includes(searchTerm) ||
+            chapter.id.toString().startsWith(searchTerm);
+          return matchesFilter && matchesSearch;
+        });
+      };
+
+      const refreshChapterList = () => {
+        renderChapters(applyChapterFilters());
+      };
+
+      const loadTranslations = async () => {
+        translationSelect.innerHTML = `<option value="">جارٍ تحميل الترجمات...</option>`;
+        try {
+          const res = await fetch(`${API_BASE}/resources/translations?language=ar`);
+          if (!res.ok) throw new Error("translations");
+          const data = await res.json();
+          const preferredLanguages = ["Arabic", "English", "French", "Indonesian", "Turkish", "Urdu"];
+          const filtered = data.translations.filter((translation) =>
+            preferredLanguages.includes(translation.language_name)
+          );
+          if (!filtered.length) throw new Error("no-translations");
+          translationSelect.innerHTML = filtered
+            .map(
+              (translation) =>
+                `<option value="${translation.id}">${translation.language_name} - ${translation.author_name}</option>`
+            )
+            .join("");
+        } catch (error) {
+          translationSelect.innerHTML = `
+            <option value="131">Sahih International (English)</option>
+            <option value="134">French - D. Kazimirski</option>
+            <option value="38">Indonesian - Bahasa Indonesia</option>
+          `;
+        }
+        const storedTranslation = Number(localStorage.getItem(TRANSLATION_KEY)) || TRANSLATION_ID;
+        const desiredOption = translationSelect.querySelector(`option[value="${storedTranslation}"]`);
+        translationSelect.value = desiredOption
+          ? storedTranslation
+          : translationSelect.options[0]?.value || TRANSLATION_ID;
+        currentTranslationId = Number(translationSelect.value) || TRANSLATION_ID;
+      };
+
+      const selectChapter = (chapterId, options = {}) => {
+        const numericId = Number(chapterId);
+        const chapter = chapters.find((ch) => ch.id === numericId);
+        if (!chapter) {
+          pendingChapterSelection = { chapterId: numericId, options };
+          return;
+        }
+        pendingChapterSelection = null;
+        currentChapterId = numericId;
+        currentChapterName = chapter.name_arabic;
+        chapterTitle.textContent = chapter.name_arabic;
+        chapterMeta.textContent = formatChapterMeta(chapter);
+        localStorage.setItem(LAST_CHAPTER_KEY, numericId);
+        playBtn.disabled = false;
+        playBtn.dataset.chapter = numericId;
+        refreshChapterList();
+        fetchVerses(numericId, options);
+      };
+
+      const fetchChapters = async () => {
+        try {
+          const res = await fetch(`${API_BASE}/chapters?language=ar`);
+          if (!res.ok) throw new Error("chapters");
+          const data = await res.json();
+          chapters = data.chapters;
+          refreshChapterList();
+          const savedChapterId = Number(localStorage.getItem(LAST_CHAPTER_KEY));
+          if (pendingChapterSelection) {
+            selectChapter(pendingChapterSelection.chapterId, pendingChapterSelection.options);
+          } else if (savedChapterId && chapters.some((ch) => ch.id === savedChapterId)) {
+            selectChapter(savedChapterId);
+          }
+        } catch (error) {
+          chaptersList.innerHTML = `<div class="alert alert-danger">تعذر تحميل السور. تأكد من الاتصال بالإنترنت.</div>`;
+        }
+      };
+
+      const fetchVerses = async (chapterId, options = {}) => {
+        if (versesAbortController) {
+          versesAbortController.abort();
+        }
+        versesAbortController = new AbortController();
+        versesContainer.innerHTML = `<div class="text-center py-5 text-muted">جارٍ جلب الآيات...</div>`;
+        try {
+          const url = `${API_BASE}/verses/by_chapter/${chapterId}?language=ar&words=false&fields=text_uthmani&translations=${currentTranslationId}&per_page=400`;
+          const res = await fetch(url, { signal: versesAbortController.signal });
+          if (!res.ok) throw new Error("verses");
+          const data = await res.json();
+          renderVerses(data.verses, options);
+          return data.verses;
+        } catch (error) {
+          if (error.name === "AbortError") return;
+          versesContainer.innerHTML = `<div class="alert alert-danger">تعذر تحميل الآيات.</div>`;
+        }
+      };
+
+      const encode = (text) => encodeURIComponent(text || "");
+      const decode = (text) => decodeURIComponent(text || "");
+      const escapeHtml = (text = "") =>
+        text.replace(/[&<>"']/g, (char) =>
+          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char])
+        );
+
+      const renderVerses = (verses, options = {}) => {
+        if (!verses?.length) {
+          versesContainer.innerHTML = `<div class="alert alert-info">لا توجد بيانات متاحة.</div>`;
+          return;
+        }
+
+        currentChapterVersesCount = verses.length;
+        viewedVerses.clear();
+        updateProgress();
+        const highlightVerse = Number(options.highlightVerse);
+        versesContainer.innerHTML = verses
+          .map((verse) => {
+            const translation = verse.translations?.[0]?.text || "";
+            const highlightClass = highlightVerse === verse.verse_number ? "highlight" : "";
+            return `
+              <div class="card verse-card border-0 ${highlightClass}" data-verse-number="${verse.verse_number}">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-dark">${verse.verse_key}</span>
+                    <div class="verse-actions d-flex gap-2">
+                      <button class="btn btn-outline-primary btn-sm" data-play-verse="${verse.id}" data-verse-number="${verse.verse_number}" title="تشغيل الآية">
+                        <i class="bi bi-play-fill"></i>
+                      </button>
+                      <button class="btn btn-outline-dark btn-sm" data-copy="${encode(
+                        verse.text_uthmani
+                      )}">نسخ</button>
+                      <button class="btn btn-outline-success btn-sm" data-bookmark="${encode(
+                        JSON.stringify({
+                          verseNumber: verse.verse_number,
+                          text: verse.text_uthmani,
+                        })
+                      )}">حفظ</button>
+                    </div>
+                  </div>
+                  <p class="verse-text mb-3">${verse.text_uthmani}</p>
+                  ${
+                    translation
+                      ? `<p class="translation mb-0">${translation}</p>`
+                      : ""
+                  }
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+        setupObservers();
+        if (highlightVerse) {
+          focusVerse(highlightVerse);
+        }
+      };
+
+      const runGlobalSearch = async () => {
+        const query = globalSearchInput.value.trim();
+        if (!query) {
+          globalSearchResults.innerHTML = "الرجاء إدخال كلمة مفتاحية.";
+          return;
+        }
+        const safeQuery = escapeHtml(query);
+        globalSearchResults.innerHTML = `<div class="text-center py-2">جارٍ البحث عن "${safeQuery}"...</div>`;
+        try {
+          const url = `${API_BASE}/search?q=${encodeURIComponent(query)}&size=5&language=ar&fields=text_uthmani&translations=${currentTranslationId}`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error("search");
+          const data = await res.json();
+          const results = data.search?.results || [];
+          if (!results.length) {
+            globalSearchResults.innerHTML = `<div class="text-muted">لا توجد نتائج مطابقة.</div>`;
+            return;
+          }
+          globalSearchResults.innerHTML = results
+            .map((result) => {
+              const verse = result.verse || {};
+              const chapterId = verse.chapter_id || result.chapter_id;
+              const verseNumber = verse.verse_number || result.verse_number;
+              const translation = result.translations?.[0]?.text || "";
+              return `
+                <div class="search-result mb-2">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <strong>${result.verse_key}</strong>
+                    <button class="btn btn-sm btn-dark" data-search-chapter="${chapterId}" data-search-verse="${verseNumber}">فتح</button>
+                  </div>
+                  <p class="mb-2">${result.text}</p>
+                  ${translation ? `<p class="small text-muted mb-0">${translation}</p>` : ""}
+                </div>
+              `;
+            })
+            .join("");
+        } catch (error) {
+          globalSearchResults.innerHTML = `<div class="text-danger">تعذر تنفيذ البحث. حاول مرة أخرى.</div>`;
+        }
+      };
+
+      const fetchRandomVerse = async () => {
+        randomVerseMeta.textContent = "جارٍ تحميل الآية...";
+        randomVerseText.textContent = "";
+        randomVerseTranslation.textContent = "";
+        openRandomVerseBtn.disabled = true;
+        try {
+          const url = `${API_BASE}/verses/random?language=ar&fields=text_uthmani&translations=${currentTranslationId}`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error("random");
+          const data = await res.json();
+          const verse = data.verse;
+          randomVerseMeta.textContent = verse.verse_key;
+          randomVerseText.textContent = verse.text_uthmani;
+          randomVerseTranslation.innerHTML = verse.translations?.[0]?.text || "";
+          lastRandomVerse = {
+            chapterId: verse.chapter_id,
+            verseNumber: verse.verse_number,
+          };
+          openRandomVerseBtn.disabled = false;
+        } catch (error) {
+          randomVerseMeta.textContent = "تعذر جلب الآية";
+          randomVerseText.textContent = "حاول مرة أخرى أو تحقق من اتصالك";
+          randomVerseTranslation.textContent = "";
+        }
+      };
+
+      chaptersList.addEventListener("click", (event) => {
+        const button = event.target.closest(".chapter-card");
+        if (!button) return;
+        selectChapter(Number(button.dataset.id));
+      });
+
+      versesContainer.addEventListener("click", (event) => {
+        const playVerseBtn = event.target.closest("button[data-play-verse]");
+        if (playVerseBtn) {
+          const verseId = Number(playVerseBtn.dataset.playVerse);
+          const verseNumber = playVerseBtn.dataset.verseNumber;
+          const audioUrl = `https://cdn.islamic.network/quran/audio/64/${RECITER_SLUG}/${verseId}.mp3`;
+          playAudioFromUrl(audioUrl, {
+            title: `آية ${verseNumber}`,
+            album: `سورة ${currentChapterName}`,
+            description: `تشغيل آية ${verseNumber} من سورة ${currentChapterName}`,
+            fileName: `ayah-${verseId}`,
+          });
+          return;
+        }
+        const copyBtn = event.target.closest("button[data-copy]");
+        if (copyBtn) {
+          navigator.clipboard.writeText(decode(copyBtn.dataset.copy));
+          copyBtn.innerHTML = '<i class="bi bi-check2"></i>';
+          setTimeout(() => (copyBtn.textContent = "نسخ"), 1500);
+        }
+        const bookmarkBtn = event.target.closest("button[data-bookmark]");
+        if (bookmarkBtn) {
+          const payload = JSON.parse(decode(bookmarkBtn.dataset.bookmark));
+          bookmarkVerse({
+            chapterName: currentChapterName,
+            verseNumber: payload.verseNumber,
+            text: payload.text,
+            chapterId: currentChapterId,
+          });
+          bookmarkBtn.innerHTML = '<i class="bi bi-bookmark-check"></i>';
+          setTimeout(() => (bookmarkBtn.textContent = "حفظ"), 1500);
+        }
+      });
+
+      playBtn.addEventListener("click", () => {
+        if (!currentChapterId) return;
+        const audioUrl = `https://cdn.islamic.network/quran/audio/128/${RECITER_SLUG}/${currentChapterId}.mp3`;
+        playAudioFromUrl(audioUrl, {
+          title: `سورة ${currentChapterName}`,
+          album: `سورة ${currentChapterName}`,
+          description: `تشغيل سورة ${currentChapterName} كاملة`,
+          fileName: `surah-${currentChapterId}`,
+        });
+      });
+
+      refreshRandomVerseBtn.addEventListener("click", fetchRandomVerse);
+      openRandomVerseBtn.addEventListener("click", () => {
+        if (!lastRandomVerse || !lastRandomVerse.chapterId) return;
+        selectChapter(lastRandomVerse.chapterId, { highlightVerse: lastRandomVerse.verseNumber });
+      });
+
+      bookmarksContainer.addEventListener("click", (event) => {
+        const jumpBtn = event.target.closest("[data-jump-chapter]");
+        if (!jumpBtn) return;
+        const chapterId = Number(jumpBtn.dataset.jumpChapter);
+        const verseNumber = Number(jumpBtn.dataset.jumpVerse);
+        if (!Number.isFinite(chapterId)) return;
+        selectChapter(chapterId, { highlightVerse: verseNumber });
+      });
+
+      searchInput.addEventListener("input", (event) => {
+        searchTerm = event.target.value.trim().toLowerCase();
+        refreshChapterList();
+      });
+
+      globalSearchBtn.addEventListener("click", runGlobalSearch);
+      globalSearchInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          runGlobalSearch();
+        }
+      });
+      globalSearchResults.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-search-chapter]");
+        if (!button) return;
+        const chapterId = Number(button.dataset.searchChapter);
+        const verseNumber = Number(button.dataset.searchVerse);
+        if (!Number.isFinite(chapterId)) return;
+        selectChapter(chapterId, { highlightVerse: verseNumber });
+      });
+
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          revelationFilter = button.dataset.revelation;
+          filterButtons.forEach((btn) => btn.classList.toggle("active", btn === button));
+          refreshChapterList();
+        });
+      });
+
+      translationSelect.addEventListener("change", (event) => {
+        currentTranslationId = Number(event.target.value);
+        localStorage.setItem(TRANSLATION_KEY, currentTranslationId);
+        if (currentChapterId) {
+          fetchVerses(currentChapterId);
+        }
+        fetchRandomVerse();
+      });
+
+      const storedFontSize = Number(localStorage.getItem(FONT_SIZE_KEY)) || 24;
+      fontSizeRange.value = storedFontSize;
+      applyFontSize(storedFontSize);
+      fontSizeRange.addEventListener("input", (event) => {
+        applyFontSize(event.target.value);
+      });
+
+      const applyTheme = (mode) => {
+        document.body.classList.toggle("dark-mode", mode === "dark");
+        themeToggle.innerHTML =
+          mode === "dark"
+            ? '<i class="bi bi-sun me-2"></i> تفعيل الوضع النهاري'
+            : '<i class="bi bi-moon-stars me-2"></i> تفعيل الوضع الليلي';
+      };
+
+      const storedTheme = localStorage.getItem(THEME_KEY) || "light";
+      applyTheme(storedTheme);
+
+      themeToggle.addEventListener("click", () => {
+        const newTheme = document.body.classList.contains("dark-mode") ? "light" : "dark";
+        localStorage.setItem(THEME_KEY, newTheme);
+        applyTheme(newTheme);
+      });
+
+      clearBookmarksBtn.addEventListener("click", () => {
+        localStorage.removeItem("bookmarkedVerses");
+        bookmarks.length = 0;
+        renderBookmarks();
+      });
+
+      audioPlayer.addEventListener("play", updateMediaSession);
+      audioPlayer.addEventListener("loadedmetadata", updateMediaSession);
+      audioPlayer.addEventListener("error", () => {
+        updatePlayerMeta("تعذر تشغيل المقطع الحالي. حاول مرة أخرى.");
+      });
+      if ("mediaSession" in navigator) {
+        try {
+          navigator.mediaSession.setActionHandler("play", () => audioPlayer.play());
+          navigator.mediaSession.setActionHandler("pause", () => audioPlayer.pause());
+        } catch (error) {}
+      }
+
+      setDownloadLink("#", "current-track");
+      updatePlayerMeta(playerMeta.textContent);
+
+      loadTranslations()
+        .then(fetchRandomVerse)
+        .catch(() => fetchRandomVerse());
+
+      renderBookmarks();
+      fetchChapters();
+    </script>
+  </body>
+</html>
