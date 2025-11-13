@@ -182,6 +182,21 @@
       .player-meta {
         font-size: 0.85rem;
       }
+      .status-item + .status-item {
+        margin-top: 0.75rem;
+      }
+      .status-pill {
+        border-radius: 999px;
+        padding: 0.15rem 0.85rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+      .history-pill {
+        border-radius: 999px;
+      }
+      body.dark-mode .status-pill {
+        border: 1px solid rgba(226, 232, 240, 0.2);
+      }
     </style>
   </head>
   <body>
@@ -310,13 +325,73 @@
           </div>
           <div class="card border-0 shadow-sm mt-4">
             <div class="card-body">
-              <div class="d-flex align-items-center justify-content-between mb-3">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                 <h6 class="mb-0">الآيات المحفوظة</h6>
-                <button class="btn btn-link text-decoration-none p-0" id="clearBookmarks">
-                  مسح الكل
-                </button>
+                <div class="d-flex align-items-center gap-3">
+                  <button
+                    class="btn btn-link text-decoration-none p-0"
+                    id="exportBookmarks"
+                    disabled
+                  >
+                    تصدير JSON
+                  </button>
+                  <button
+                    class="btn btn-link text-decoration-none p-0"
+                    id="clearBookmarks"
+                    disabled
+                  >
+                    مسح الكل
+                  </button>
+                </div>
               </div>
               <div id="bookmarksContainer" class="small text-muted"></div>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="mb-0">مراقبة واجهات البرمجة</h6>
+                <span class="badge bg-info text-dark">تشخيص مباشر</span>
+              </div>
+              <ul class="list-unstyled mb-0" id="apiStatusList">
+                <li class="d-flex justify-content-between align-items-start status-item" data-api-status="chapters">
+                  <div>
+                    <div class="fw-semibold">السور</div>
+                    <small class="text-muted status-message">لم يبدأ التحميل بعد.</small>
+                  </div>
+                  <span class="status-pill bg-secondary text-white status-label">جاهز</span>
+                </li>
+                <li class="d-flex justify-content-between align-items-start status-item mt-3" data-api-status="verses">
+                  <div>
+                    <div class="fw-semibold">الآيات</div>
+                    <small class="text-muted status-message">اختر سورة لعرض بياناتها.</small>
+                  </div>
+                  <span class="status-pill bg-secondary text-white status-label">جاهز</span>
+                </li>
+                <li class="d-flex justify-content-between align-items-start status-item mt-3" data-api-status="random">
+                  <div>
+                    <div class="fw-semibold">آية اليوم</div>
+                    <small class="text-muted status-message">بانتظار أول طلب.</small>
+                  </div>
+                  <span class="status-pill bg-secondary text-white status-label">جاهز</span>
+                </li>
+                <li class="d-flex justify-content-between align-items-start status-item mt-3" data-api-status="search">
+                  <div>
+                    <div class="fw-semibold">البحث الشامل</div>
+                    <small class="text-muted status-message">جاهز للبحث.</small>
+                  </div>
+                  <span class="status-pill bg-secondary text-white status-label">جاهز</span>
+                </li>
+              </ul>
+              <hr class="my-4" />
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                <h6 class="mb-0 fs-6">أحدث السور المفتوحة</h6>
+                <button class="btn btn-sm btn-outline-secondary" id="clearHistory" disabled>
+                  مسح السجل
+                </button>
+              </div>
+              <div id="recentHistory" class="small text-muted">لم يتم فتح أي سورة بعد.</div>
             </div>
           </div>
         </div>
@@ -383,6 +458,7 @@
       const TRANSLATION_KEY = "preferredTranslation";
       const THEME_KEY = "quran_theme";
       const FONT_SIZE_KEY = "verseFontSize";
+      const RECENT_HISTORY_KEY = "recentChapterHistory";
       const audioPlayer = document.getElementById("audioPlayer");
       const playerMeta = document.getElementById("playerMeta");
       const downloadRecitation = document.getElementById("downloadRecitation");
@@ -409,12 +485,49 @@
       const globalSearchInput = document.getElementById("globalSearchInput");
       const globalSearchBtn = document.getElementById("globalSearchBtn");
       const globalSearchResults = document.getElementById("globalSearchResults");
+      const exportBookmarksBtn = document.getElementById("exportBookmarks");
+      const apiStatusItems = {
+        chapters: document.querySelector('[data-api-status="chapters"]'),
+        verses: document.querySelector('[data-api-status="verses"]'),
+        random: document.querySelector('[data-api-status="random"]'),
+        search: document.querySelector('[data-api-status="search"]'),
+      };
+      const recentHistoryContainer = document.getElementById("recentHistory");
+      const clearHistoryBtn = document.getElementById("clearHistory");
+
+      const API_RETRYABLE_STATUSES = new Set([409, 429, 500, 502, 503, 504]);
+      const STATUS_LABELS = {
+        idle: "جاهز",
+        loading: "جارٍ",
+        ok: "مستقر",
+        error: "متوقف",
+      };
+      const STATUS_CLASSES = {
+        idle: "bg-secondary text-white",
+        loading: "bg-warning text-dark",
+        ok: "bg-success text-white",
+        error: "bg-danger text-white",
+      };
+      const DEFAULT_STATUS_MESSAGES = {
+        idle: "جاهز للاستدعاء.",
+        loading: "يتم التواصل مع الواجهة.",
+        ok: "تم تنفيذ الطلب بنجاح.",
+        error: "حدث خطأ في الطلب.",
+      };
+
+      const safeParseJSON = (value, fallback) => {
+        try {
+          return value ? JSON.parse(value) : fallback;
+        } catch (error) {
+          return fallback;
+        }
+      };
 
       let chapters = [];
       let currentChapterId = null;
       let currentChapterName = "";
       let pendingChapterSelection = null;
-      const bookmarks = JSON.parse(localStorage.getItem("bookmarkedVerses") || "[]");
+      const bookmarks = safeParseJSON(localStorage.getItem("bookmarkedVerses"), []);
       let currentTranslationId = Number(localStorage.getItem(TRANSLATION_KEY)) || TRANSLATION_ID;
       let revelationFilter = "all";
       let searchTerm = "";
@@ -422,7 +535,9 @@
       let currentChapterVersesCount = 0;
       const viewedVerses = new Set();
       let versesAbortController = null;
+      let searchAbortController = null;
       let lastRandomVerse = null;
+      let recentHistory = safeParseJSON(localStorage.getItem(RECENT_HISTORY_KEY), []);
       let currentTrackMeta = {
         title: "",
         album: "",
@@ -432,6 +547,57 @@
 
       const updatePlayerMeta = (text) => {
         playerMeta.textContent = text || "لم يتم اختيار أي مقطع بعد.";
+      };
+
+      const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      const describeApiError = (error) => {
+        if (error?.name === "AbortError") return "تم إلغاء الطلب السابق.";
+        if (error?.status === 429) return "تجاوز الحد. انتظر لحظات وأعد المحاولة.";
+        if (error?.status === 409) return "تعارض في الطلب. تمت إعادة المحاولة تلقائيًا.";
+        if (error?.status === 404) return "المورد غير موجود.";
+        return "تعذر الاتصال بالخادم.";
+      };
+
+      const setApiStatus = (key, state, message = "") => {
+        const item = apiStatusItems[key];
+        if (!item) return;
+        const pill = item.querySelector(".status-label");
+        const text = item.querySelector(".status-message");
+        const stateLabel = STATUS_LABELS[state] || STATUS_LABELS.idle;
+        const className = STATUS_CLASSES[state] || STATUS_CLASSES.idle;
+        pill.className = `status-pill ${className}`;
+        pill.textContent = stateLabel;
+        text.textContent = message || DEFAULT_STATUS_MESSAGES[state] || DEFAULT_STATUS_MESSAGES.idle;
+      };
+
+      const apiRequest = async (path, { params = {}, signal, retries = 2 } = {}) => {
+        const url = new URL(`${API_BASE}${path}`);
+        Object.entries(params).forEach(([key, value]) => {
+          if (value === undefined || value === null) return;
+          url.searchParams.append(key, value);
+        });
+        for (let attempt = 0; attempt <= retries; attempt++) {
+          try {
+            const response = await fetch(url.toString(), { signal });
+            if (!response.ok) {
+              const error = new Error(`HTTP_${response.status}`);
+              error.status = response.status;
+              throw error;
+            }
+            return response.json();
+          } catch (error) {
+            if (error.name === "AbortError") {
+              throw error;
+            }
+            if (API_RETRYABLE_STATUSES.has(error.status) && attempt < retries) {
+              await delay(350 * (attempt + 1));
+              continue;
+            }
+            throw error;
+          }
+        }
+        throw new Error("unreachable");
       };
 
       const updateMediaSession = () => {
@@ -511,9 +677,16 @@
         document.querySelectorAll("[data-verse-number]").forEach((card) => observer.observe(card));
       };
 
+      const updateBookmarkActions = () => {
+        const hasBookmarks = Boolean(bookmarks.length);
+        clearBookmarksBtn.disabled = !hasBookmarks;
+        exportBookmarksBtn.disabled = !hasBookmarks;
+      };
+
       const renderBookmarks = () => {
         if (!bookmarks.length) {
           bookmarksContainer.innerHTML = "لا توجد آيات محفوظة بعد.";
+          updateBookmarkActions();
           return;
         }
         bookmarksContainer.innerHTML = bookmarks
@@ -534,6 +707,40 @@
             `;
           })
           .join("");
+        updateBookmarkActions();
+      };
+
+      const renderRecentHistory = () => {
+        if (!recentHistory.length) {
+          recentHistoryContainer.textContent = "لم يتم فتح أي سورة بعد.";
+          recentHistoryContainer.classList.remove("d-flex", "flex-wrap", "gap-2");
+          clearHistoryBtn.disabled = true;
+          return;
+        }
+        clearHistoryBtn.disabled = false;
+        recentHistoryContainer.classList.add("d-flex", "flex-wrap", "gap-2");
+        recentHistoryContainer.innerHTML = recentHistory
+          .map(
+            (item) => `
+              <button class="btn btn-sm btn-outline-dark history-pill" data-history-id="${item.id}">
+                ${item.name}
+                <span class="ms-2 text-muted small">${item.verses} آية</span>
+              </button>
+            `
+          )
+          .join("");
+      };
+
+      const trackRecentChapter = (chapter) => {
+        if (!chapter) return;
+        const payload = {
+          id: chapter.id,
+          name: chapter.name_arabic,
+          verses: chapter.verses_count,
+        };
+        recentHistory = [payload, ...recentHistory.filter((item) => item.id !== chapter.id)].slice(0, 6);
+        localStorage.setItem(RECENT_HISTORY_KEY, JSON.stringify(recentHistory));
+        renderRecentHistory();
       };
 
       const bookmarkVerse = ({ chapterName, verseNumber, text, chapterId }) => {
@@ -586,9 +793,10 @@
       const loadTranslations = async () => {
         translationSelect.innerHTML = `<option value="">جارٍ تحميل الترجمات...</option>`;
         try {
-          const res = await fetch(`${API_BASE}/resources/translations?language=ar`);
-          if (!res.ok) throw new Error("translations");
-          const data = await res.json();
+          const data = await apiRequest("/resources/translations", {
+            params: { language: "ar" },
+            retries: 1,
+          });
           const preferredLanguages = ["Arabic", "English", "French", "Indonesian", "Turkish", "Urdu"];
           const filtered = data.translations.filter((translation) =>
             preferredLanguages.includes(translation.language_name)
@@ -627,6 +835,7 @@
         currentChapterName = chapter.name_arabic;
         chapterTitle.textContent = chapter.name_arabic;
         chapterMeta.textContent = formatChapterMeta(chapter);
+        trackRecentChapter(chapter);
         localStorage.setItem(LAST_CHAPTER_KEY, numericId);
         playBtn.disabled = false;
         playBtn.dataset.chapter = numericId;
@@ -635,12 +844,13 @@
       };
 
       const fetchChapters = async () => {
+        chaptersList.innerHTML = `<div class="text-center py-3 text-muted">جارٍ تحميل السور...</div>`;
+        setApiStatus("chapters", "loading", "جارٍ تحميل قائمة السور.");
         try {
-          const res = await fetch(`${API_BASE}/chapters?language=ar`);
-          if (!res.ok) throw new Error("chapters");
-          const data = await res.json();
+          const data = await apiRequest("/chapters", { params: { language: "ar" } });
           chapters = data.chapters;
           refreshChapterList();
+          setApiStatus("chapters", "ok", `${chapters.length} سورة متاحة.`);
           const savedChapterId = Number(localStorage.getItem(LAST_CHAPTER_KEY));
           if (pendingChapterSelection) {
             selectChapter(pendingChapterSelection.chapterId, pendingChapterSelection.options);
@@ -649,6 +859,7 @@
           }
         } catch (error) {
           chaptersList.innerHTML = `<div class="alert alert-danger">تعذر تحميل السور. تأكد من الاتصال بالإنترنت.</div>`;
+          setApiStatus("chapters", "error", describeApiError(error));
         }
       };
 
@@ -658,16 +869,25 @@
         }
         versesAbortController = new AbortController();
         versesContainer.innerHTML = `<div class="text-center py-5 text-muted">جارٍ جلب الآيات...</div>`;
+        setApiStatus("verses", "loading", `جارٍ تحميل آيات سورة ${currentChapterName || chapterId}.`);
         try {
-          const url = `${API_BASE}/verses/by_chapter/${chapterId}?language=ar&words=false&fields=text_uthmani&translations=${currentTranslationId}&per_page=400`;
-          const res = await fetch(url, { signal: versesAbortController.signal });
-          if (!res.ok) throw new Error("verses");
-          const data = await res.json();
+          const data = await apiRequest(`/verses/by_chapter/${chapterId}`, {
+            params: {
+              language: "ar",
+              words: "false",
+              fields: "text_uthmani",
+              translations: currentTranslationId,
+              per_page: 400,
+            },
+            signal: versesAbortController.signal,
+          });
           renderVerses(data.verses, options);
+          setApiStatus("verses", "ok", `${data.verses.length} آية جاهزة.`);
           return data.verses;
         } catch (error) {
           if (error.name === "AbortError") return;
           versesContainer.innerHTML = `<div class="alert alert-danger">تعذر تحميل الآيات.</div>`;
+          setApiStatus("verses", "error", describeApiError(error));
         }
       };
 
@@ -733,18 +953,32 @@
         const query = globalSearchInput.value.trim();
         if (!query) {
           globalSearchResults.innerHTML = "الرجاء إدخال كلمة مفتاحية.";
+          setApiStatus("search", "idle", "الرجاء إدخال كلمة مفتاحية.");
           return;
         }
         const safeQuery = escapeHtml(query);
         globalSearchResults.innerHTML = `<div class="text-center py-2">جارٍ البحث عن "${safeQuery}"...</div>`;
+        setApiStatus("search", "loading", `جارٍ البحث عن "${safeQuery}".`);
+        if (searchAbortController) {
+          searchAbortController.abort();
+        }
+        searchAbortController = new AbortController();
         try {
-          const url = `${API_BASE}/search?q=${encodeURIComponent(query)}&size=5&language=ar&fields=text_uthmani&translations=${currentTranslationId}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error("search");
-          const data = await res.json();
+          const data = await apiRequest("/search", {
+            params: {
+              q: query,
+              size: 5,
+              language: "ar",
+              fields: "text_uthmani",
+              translations: currentTranslationId,
+            },
+            signal: searchAbortController.signal,
+            retries: 1,
+          });
           const results = data.search?.results || [];
           if (!results.length) {
             globalSearchResults.innerHTML = `<div class="text-muted">لا توجد نتائج مطابقة.</div>`;
+            setApiStatus("search", "ok", "لا توجد نتائج مطابقة.");
             return;
           }
           globalSearchResults.innerHTML = results
@@ -765,8 +999,11 @@
               `;
             })
             .join("");
+          setApiStatus("search", "ok", `${results.length} نتيجة معروضة.`);
         } catch (error) {
+          if (error.name === "AbortError") return;
           globalSearchResults.innerHTML = `<div class="text-danger">تعذر تنفيذ البحث. حاول مرة أخرى.</div>`;
+          setApiStatus("search", "error", describeApiError(error));
         }
       };
 
@@ -775,11 +1012,17 @@
         randomVerseText.textContent = "";
         randomVerseTranslation.textContent = "";
         openRandomVerseBtn.disabled = true;
+        refreshRandomVerseBtn.disabled = true;
+        setApiStatus("random", "loading", "جارٍ جلب آية جديدة.");
         try {
-          const url = `${API_BASE}/verses/random?language=ar&fields=text_uthmani&translations=${currentTranslationId}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error("random");
-          const data = await res.json();
+          const data = await apiRequest("/verses/random", {
+            params: {
+              language: "ar",
+              fields: "text_uthmani",
+              translations: currentTranslationId,
+            },
+            retries: 1,
+          });
           const verse = data.verse;
           randomVerseMeta.textContent = verse.verse_key;
           randomVerseText.textContent = verse.text_uthmani;
@@ -789,10 +1032,14 @@
             verseNumber: verse.verse_number,
           };
           openRandomVerseBtn.disabled = false;
+          setApiStatus("random", "ok", verse.verse_key);
         } catch (error) {
           randomVerseMeta.textContent = "تعذر جلب الآية";
           randomVerseText.textContent = "حاول مرة أخرى أو تحقق من اتصالك";
           randomVerseTranslation.textContent = "";
+          setApiStatus("random", "error", describeApiError(error));
+        } finally {
+          refreshRandomVerseBtn.disabled = false;
         }
       };
 
@@ -862,6 +1109,14 @@
         selectChapter(chapterId, { highlightVerse: verseNumber });
       });
 
+      recentHistoryContainer.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-history-id]");
+        if (!button) return;
+        const chapterId = Number(button.dataset.historyId);
+        if (!Number.isFinite(chapterId)) return;
+        selectChapter(chapterId);
+      });
+
       searchInput.addEventListener("input", (event) => {
         searchTerm = event.target.value.trim().toLowerCase();
         refreshChapterList();
@@ -925,9 +1180,32 @@
       });
 
       clearBookmarksBtn.addEventListener("click", () => {
+        if (!bookmarks.length) return;
         localStorage.removeItem("bookmarkedVerses");
         bookmarks.length = 0;
         renderBookmarks();
+      });
+
+      exportBookmarksBtn.addEventListener("click", () => {
+        if (!bookmarks.length) return;
+        const blob = new Blob([JSON.stringify(bookmarks, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "quran-bookmarks.json";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      });
+
+      clearHistoryBtn.addEventListener("click", () => {
+        if (!recentHistory.length) return;
+        recentHistory = [];
+        localStorage.removeItem(RECENT_HISTORY_KEY);
+        renderRecentHistory();
       });
 
       audioPlayer.addEventListener("play", updateMediaSession);
@@ -944,11 +1222,16 @@
 
       setDownloadLink("#", "current-track");
       updatePlayerMeta(playerMeta.textContent);
+      setApiStatus("chapters", "idle", "بانتظار التحميل.");
+      setApiStatus("verses", "idle", "اختر سورة لعرض بياناتها.");
+      setApiStatus("random", "idle", "بانتظار أول طلب.");
+      setApiStatus("search", "idle", "جاهز للبحث.");
 
       loadTranslations()
         .then(fetchRandomVerse)
         .catch(() => fetchRandomVerse());
 
+      renderRecentHistory();
       renderBookmarks();
       fetchChapters();
     </script>
