@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>مصحف القارئ محمد أيوب</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body data-theme="light">
+    <header class="container py-4">
+      <div class="hero text-center text-md-start">
+        <div class="row align-items-center g-4">
+          <div class="col-md-8">
+            <p class="text-uppercase mb-2 letter-spacing small opacity-75">
+              مصحف شامل
+            </p>
+            <h1 class="display-5 fw-bold mb-3">
+              استمع وتدبر مع الشيخ <span class="text-warning">محمد أيوب</span>
+            </h1>
+            <p class="lead mb-4">
+              تجربة قراءة واستماع حديثة تعتمد على واجهات برمجة تطبيقات Qur'an.com
+              وتدعم التخصيص، الحفظ، والبحث الشامل في المصحف الشريف.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge bg-light text-dark">
+                <i class="bi bi-music-note-beamed me-1"></i> تلاوة عالية الجودة
+              </span>
+              <span class="badge bg-light text-dark">
+                <i class="bi bi-translate me-1"></i> تراجم متعددة
+              </span>
+              <span class="badge bg-light text-dark">
+                <i class="bi bi-bookmark-heart me-1"></i> إشارات مرجعية ذكية
+              </span>
+            </div>
+          </div>
+          <div class="col-md-4 text-md-end">
+            <div class="rounded-4 bg-white bg-opacity-25 p-4">
+              <p class="text-uppercase small mb-1">القارئ</p>
+              <h2 class="fw-bold">الشيخ محمد أيوب</h2>
+              <p class="small mb-0">
+                إمام المسجد النبوي سابقًا، بصوت خاشع ومرتّل متاح عبر شبكة التلاوات
+                الإسلامية.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="container pb-5">
+      <section class="row g-4">
+        <div class="col-lg-4">
+          <div class="floating-panel card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="section-title mb-0">التحكم</h2>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="themeSelect">اختر السمة</label>
+              <select id="themeSelect" class="form-select"></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">ابحث عن سورة</label>
+              <input
+                type="search"
+                id="chapterSearch"
+                class="form-control"
+                placeholder="اكتب اسم السورة"
+              />
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">الترجمة</label>
+              <select id="translationSelect" class="form-select"></select>
+            </div>
+            <div class="mb-4">
+              <label class="form-label fw-semibold">حجم الخط</label>
+              <input
+                type="range"
+                id="fontSizeRange"
+                class="form-range"
+                min="1"
+                max="2"
+                step="0.05"
+                value="1.35"
+              />
+            </div>
+            <div class="mb-3">
+              <button id="globalSearchBtn" class="btn btn-pill w-100 btn-outline-primary">
+                <i class="bi bi-search ms-1"></i>
+                بحث شامل في المصحف
+              </button>
+            </div>
+            <div class="mb-0">
+              <button id="exportBookmarks" class="btn btn-pill w-100 btn-outline-success">
+                <i class="bi bi-download ms-1"></i>
+                تصدير الإشارات المرجعية
+              </button>
+            </div>
+          </div>
+
+          <div class="card p-4 mb-4">
+            <h2 class="section-title mb-3">آخر السور المفتوحة</h2>
+            <div id="historyContainer" class="d-flex flex-wrap gap-2 small"></div>
+            <button class="btn btn-link text-danger mt-2 p-0" id="clearHistory">
+              مسح السجل
+            </button>
+          </div>
+
+          <div class="card p-4 mb-4">
+            <h2 class="section-title mb-3">آية اليوم</h2>
+            <p class="mb-2" id="dailyAyahArabic"></p>
+            <p class="text-muted small" id="dailyAyahTranslation"></p>
+            <button class="btn btn-pill btn-outline-secondary w-100" id="refreshDaily">
+              <i class="bi bi-shuffle ms-1"></i>
+              آية جديدة
+            </button>
+          </div>
+
+          <div class="card p-4">
+            <h2 class="section-title mb-3">الحالة</h2>
+            <div class="status-item mb-2">
+              <span class="d-block small text-muted">قائمة السور</span>
+              <span id="statusChapters" class="status-pill">—</span>
+            </div>
+            <div class="status-item mb-2">
+              <span class="d-block small text-muted">الآيات</span>
+              <span id="statusVerses" class="status-pill">—</span>
+            </div>
+            <div class="status-item mb-2">
+              <span class="d-block small text-muted">بحث المصحف</span>
+              <span id="statusSearch" class="status-pill">—</span>
+            </div>
+            <div class="status-item">
+              <span class="d-block small text-muted">الآية العشوائية</span>
+              <span id="statusRandom" class="status-pill">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-8">
+          <div class="card p-4 mb-4">
+            <div class="d-flex flex-column flex-md-row align-items-md-center gap-3 mb-4">
+              <div class="flex-grow-1">
+                <label class="form-label fw-semibold">قائمة السور</label>
+                <input
+                  type="search"
+                  class="form-control"
+                  id="chapterQuickSearch"
+                  placeholder="ابحث بسرعة في السور"
+                />
+              </div>
+              <div>
+                <select id="revelationFilter" class="form-select">
+                  <option value="all">كل السور</option>
+                  <option value="Meccan">مكية</option>
+                  <option value="Medinan">مدنية</option>
+                </select>
+              </div>
+            </div>
+            <div class="row g-3" id="chaptersContainer"></div>
+          </div>
+
+          <div class="card p-4 mb-4">
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+              <h2 class="section-title mb-0" id="currentSurahTitle">اختر سورة</h2>
+              <span class="badge bg-primary" id="currentSurahInfo"></span>
+            </div>
+            <div class="mb-3">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input
+                  type="search"
+                  class="form-control"
+                  id="verseSearch"
+                  placeholder="ابحث داخل السورة"
+                />
+              </div>
+            </div>
+            <div class="verses-wrapper" id="versesContainer"></div>
+            <div class="text-center" id="loadMoreContainer" hidden>
+              <button class="btn btn-outline-primary btn-pill" id="loadMoreVerses">
+                تحميل المزيد من الآيات
+              </button>
+            </div>
+          </div>
+
+          <div class="card p-4 mb-4" id="searchPanel" hidden>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="section-title mb-0">نتائج البحث الشامل</h2>
+              <button class="btn btn-link text-danger p-0" id="closeSearch">إغلاق</button>
+            </div>
+            <div id="searchResults" class="d-grid gap-3"></div>
+          </div>
+
+          <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="section-title mb-0">الإشارات المرجعية</h2>
+              <button class="btn btn-sm btn-outline-danger btn-pill" id="clearBookmarks">
+                مسح الكل
+              </button>
+            </div>
+            <div id="bookmarksContainer" class="d-flex flex-column gap-2 small"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="border-top py-4">
+      <div class="container d-flex flex-column flex-md-row gap-3 justify-content-between align-items-center">
+        <div>
+          <span class="fw-semibold">مصحف محمد أيوب</span>
+          <span class="text-muted small">يعتمد على API Qur'an.com و Islamic.network</span>
+        </div>
+        <div class="player-meta text-center text-md-end flex-grow-1 w-100">
+          <div class="d-flex flex-column gap-2">
+            <div class="d-flex flex-wrap align-items-center gap-2 justify-content-center justify-content-md-end">
+              <div class="btn-group" role="group" aria-label="Player controls">
+                <button class="btn btn-outline-secondary" id="prevVerseBtn" title="الآية السابقة">
+                  <i class="bi bi-skip-backward-fill"></i>
+                </button>
+                <button class="btn btn-outline-primary" id="playCurrentVerse" title="تشغيل الآية الحالية">
+                  <i class="bi bi-play-fill"></i>
+                </button>
+                <button class="btn btn-outline-secondary" id="nextVerseBtn" title="الآية التالية">
+                  <i class="bi bi-skip-forward-fill"></i>
+                </button>
+              </div>
+              <button class="btn btn-outline-success btn-pill" id="autoAdvanceToggle">
+                التشغيل المتتالي: مفعل
+              </button>
+            </div>
+            <audio id="globalAudio" controls preload="none"></audio>
+          </div>
+          <div class="small mt-1" id="playerStatus"></div>
+        </div>
+      </div>
+    </footer>
+
+  </body>
+</html>
